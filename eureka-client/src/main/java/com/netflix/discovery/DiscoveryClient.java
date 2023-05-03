@@ -870,6 +870,7 @@ public class DiscoveryClient implements EurekaClient {
      * Register with the eureka service by making the appropriate REST call.
      */
     boolean register() throws Throwable {
+        // TODO eureka-client服务注册入口3
         logger.info(PREFIX + "{}: registering service...", appPathIdentifier);
         EurekaHttpResponse<Void> httpResponse;
         try {
@@ -888,6 +889,7 @@ public class DiscoveryClient implements EurekaClient {
      * Renew with the eureka service by making the appropriate REST call
      */
     boolean renew() {
+        // TODO eureka-client 服务续约的入口
         EurekaHttpResponse<InstanceInfo> httpResponse;
         try {
             httpResponse = eurekaTransport.registrationClient.sendHeartBeat(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo, null);
@@ -965,6 +967,7 @@ public class DiscoveryClient implements EurekaClient {
      * unregister w/ the eureka service.
      */
     void unregister() {
+        // TODO eureka-client 服务下线入口
         // It can be null if shouldRegisterWithEureka == false
         if(eurekaTransport != null && eurekaTransport.registrationClient != null) {
             try {
@@ -1297,9 +1300,13 @@ public class DiscoveryClient implements EurekaClient {
      * Initializes all scheduled tasks.
      */
     private void initScheduledTasks() {
+        // TODO eureka-client初始化定时任务
+        // TODO 客户端是否需要拉取注册中心的信息，true-创建定时任务，定时拉取
         if (clientConfig.shouldFetchRegistry()) {
             // registry cache refresh timer
+            // TODO 拉取注册信息默认30s
             int registryFetchIntervalSeconds = clientConfig.getRegistryFetchIntervalSeconds();
+            // TODO 默认10s
             int expBackOffBound = clientConfig.getCacheRefreshExecutorExponentialBackOffBound();
             cacheRefreshTask = new TimedSupervisorTask(
                     "cacheRefresh",
@@ -1315,12 +1322,16 @@ public class DiscoveryClient implements EurekaClient {
                     registryFetchIntervalSeconds, TimeUnit.SECONDS);
         }
 
+        // TODO 客户端是否注册到eureka注册中心，true-创建定时任务,定时发送心跳，及创建线程注册自身到eureka注册中心
         if (clientConfig.shouldRegisterWithEureka()) {
+            // TODO 心跳默认30s
             int renewalIntervalInSecs = instanceInfo.getLeaseInfo().getRenewalIntervalInSecs();
+            // TODO 默认10s
             int expBackOffBound = clientConfig.getHeartbeatExecutorExponentialBackOffBound();
             logger.info("Starting heartbeat executor: " + "renew interval is: {}", renewalIntervalInSecs);
 
             // Heartbeat timer
+            // TODO 心跳任务
             heartbeatTask = new TimedSupervisorTask(
                     "heartbeat",
                     scheduler,
@@ -1335,6 +1346,7 @@ public class DiscoveryClient implements EurekaClient {
                     renewalIntervalInSecs, TimeUnit.SECONDS);
 
             // InstanceInfo replicator
+            // TODO 注册任务线程
             instanceInfoReplicator = new InstanceInfoReplicator(
                     this,
                     instanceInfo,
@@ -1358,6 +1370,7 @@ public class DiscoveryClient implements EurekaClient {
                 applicationInfoManager.registerStatusChangeListener(statusChangeListener);
             }
 
+            // TODO 启动注册任务线程，注册的入口1  默认40s
             instanceInfoReplicator.start(clientConfig.getInitialInstanceInfoReplicationIntervalSeconds());
         } else {
             logger.info("Not registering with Eureka server per configuration");
@@ -1437,6 +1450,7 @@ public class DiscoveryClient implements EurekaClient {
 
         InstanceStatus status;
         try {
+            // TODO 通过健康检查处理器获取实例信息的状态
             status = getHealthCheckHandler().getStatus(instanceInfo.getStatus());
         } catch (Exception e) {
             logger.warn("Exception from healthcheckHandler.getStatus, setting status to DOWN", e);
@@ -1506,6 +1520,7 @@ public class DiscoveryClient implements EurekaClient {
 
             boolean remoteRegionsModified = false;
             // This makes sure that a dynamic change to remote regions to fetch is honored.
+            // TODO 默认null
             String latestRemoteRegions = clientConfig.fetchRegistryForRemoteRegions();
             if (null != latestRemoteRegions) {
                 String currentRemoteRegions = remoteRegionsToFetch.get();

@@ -408,6 +408,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
         if (info.getLeaseInfo() != null && info.getLeaseInfo().getDurationInSecs() > 0) {
             leaseDuration = info.getLeaseInfo().getDurationInSecs();
         }
+        // TODO enreka-server 注册服务
         super.register(info, leaseDuration, isReplication);
         replicateToPeers(Action.Register, info.getAppName(), info.getId(), info, null, isReplication);
     }

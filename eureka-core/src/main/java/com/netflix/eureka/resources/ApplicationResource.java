@@ -144,6 +144,7 @@ public class ApplicationResource {
     @Consumes({"application/json", "application/xml"})
     public Response addInstance(InstanceInfo info,
                                 @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication) {
+        // TODO eureka-server处理注册请求服务的方法
         logger.debug("Registering instance {} (replication={})", info.getId(), isReplication);
         // validate that the instanceinfo contains all the necessary required fields
         if (isBlank(info.getId())) {
@@ -183,6 +184,7 @@ public class ApplicationResource {
             }
         }
 
+        // TODO 注册方法
         registry.register(info, "true".equals(isReplication));
         return Response.status(204).build();  // 204 to be backwards compatible
     }

@@ -114,10 +114,12 @@ class InstanceInfoReplicator implements Runnable {
 
     public void run() {
         try {
+            // TODO 服务注册入口2
             discoveryClient.refreshInstanceInfo();
 
             Long dirtyTimestamp = instanceInfo.isDirtyWithTime();
             if (dirtyTimestamp != null) {
+                // TODO 注册
                 discoveryClient.register();
                 instanceInfo.unsetIsDirty(dirtyTimestamp);
             }
