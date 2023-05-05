@@ -404,12 +404,14 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
      */
     @Override
     public void register(final InstanceInfo info, final boolean isReplication) {
+        // TODO 默认保存时间
         int leaseDuration = Lease.DEFAULT_DURATION_IN_SECS;
         if (info.getLeaseInfo() != null && info.getLeaseInfo().getDurationInSecs() > 0) {
             leaseDuration = info.getLeaseInfo().getDurationInSecs();
         }
         // TODO enreka-server 注册服务
         super.register(info, leaseDuration, isReplication);
+        // TODO 将eureka服务的改变同步到其他eureka服务节点
         replicateToPeers(Action.Register, info.getAppName(), info.getId(), info, null, isReplication);
     }
 
@@ -636,6 +638,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                 numberOfReplicationsLastMin.increment();
             }
             // If it is a replication already, do not replicate again as this will create a poison replication
+            // TODO 如果eureka同步节点为空或者已经复制过，则不在复制
             if (peerEurekaNodes == Collections.EMPTY_LIST || isReplication) {
                 return;
             }
@@ -645,6 +648,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                 if (peerEurekaNodes.isThisMyUrl(node.getServiceUrl())) {
                     continue;
                 }
+                // TODO 将eureka服务的改变同步到其他eureka服务节点
                 replicateInstanceActionsToPeers(action, appName, id, info, newStatus, node);
             }
         } finally {
@@ -673,6 +677,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                     node.heartbeat(appName, id, infoFromRegistry, overriddenStatus, false);
                     break;
                 case Register:
+                    // TODO 将eureka服务的改变同步到其他eureka服务
                     node.register(info);
                     break;
                 case StatusUpdate:
