@@ -940,6 +940,7 @@ public class DiscoveryClient implements EurekaClient {
                 applicationInfoManager.unregisterStatusChangeListener(statusChangeListener.getId());
             }
 
+            // TODO 取消定时任务
             cancelScheduledTasks();
 
             // If APPINFO was registered
@@ -1014,8 +1015,10 @@ public class DiscoveryClient implements EurekaClient {
                 logger.info("Registered Applications size is zero : {}",
                         (applications.getRegisteredApplications().size() == 0));
                 logger.info("Application version is -1: {}", (applications.getVersion() == -1));
+                // TODO 获取并且存储全量注册信息
                 getAndStoreFullRegistry();
             } else {
+                // TODO 获取并且更新增量注册信息
                 getAndUpdateDelta(applications);
             }
             applications.setAppsHashCode(applications.getReconcileHashCode());
@@ -1031,9 +1034,11 @@ public class DiscoveryClient implements EurekaClient {
         }
 
         // Notify about cache refresh before updating the instance remote status
+        // TODO 刷新缓存
         onCacheRefreshed();
 
         // Update remote status based on refreshed data held in the cache
+        // TODO 更新实例远程状态
         updateInstanceRemoteStatus();
 
         // registry was fetched successfully, so return true
@@ -1135,6 +1140,7 @@ public class DiscoveryClient implements EurekaClient {
         long currentUpdateGeneration = fetchRegistryGeneration.get();
 
         Applications delta = null;
+        // TODO 发送请求
         EurekaHttpResponse<Applications> httpResponse = eurekaTransport.queryClient.getDelta(remoteRegionsRef.get());
         if (httpResponse.getStatusCode() == Status.OK.getStatusCode()) {
             delta = httpResponse.getEntity();
@@ -1543,6 +1549,7 @@ public class DiscoveryClient implements EurekaClient {
                 }
             }
 
+            // TODO 拉取注册信息
             boolean success = fetchRegistry(remoteRegionsModified);
             if (success) {
                 registrySize = localRegionApps.get().size();

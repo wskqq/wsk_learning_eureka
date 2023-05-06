@@ -106,6 +106,7 @@ public class ApplicationResource {
                 EurekaAccept.fromString(eurekaAccept)
         );
 
+        // TODO 从缓存中获取数据
         String payLoad = responseCache.get(cacheKey);
         CurrentRequestVersion.remove();
 

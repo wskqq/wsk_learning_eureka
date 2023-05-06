@@ -102,7 +102,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     private final AtomicReference<EvictionTask> evictionTaskRef = new AtomicReference<>();
 
     protected String[] allKnownRemoteRegions = EMPTY_STR_ARRAY;
+    // TODO 最小每分钟续约次数
     protected volatile int numberOfRenewsPerMinThreshold;
+    // TODO 期望最大每分钟续约次数
     protected volatile int expectedNumberOfClientsSendingRenews;
 
     protected final EurekaServerConfig serverConfig;
@@ -130,6 +132,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     @Override
     public synchronized void initializedResponseCache() {
         if (responseCache == null) {
+            // TODO 定时更新readOnlyCacheMap
             responseCache = new ResponseCacheImpl(serverConfig, serverCodecs, this);
         }
     }
@@ -269,7 +272,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             // TODO 最近变化队列
             recentlyChangedQueue.add(new RecentlyChangedItem(lease));
             registrant.setLastUpdatedTimestamp();
-            // TODO 使缓存失效
+            // TODO registry注册表数据更新时，清空 readWriteCacheMap 缓存中的数据
             invalidateCache(registrant.getAppName(), registrant.getVIPAddress(), registrant.getSecureVipAddress());
             logger.info("Registered instance {}/{} with status {} (replication={})",
                     registrant.getAppName(), registrant.getId(), registrant.getStatus(), isReplication);
@@ -309,6 +312,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             Map<String, Lease<InstanceInfo>> gMap = registry.get(appName);
             Lease<InstanceInfo> leaseToCancel = null;
             if (gMap != null) {
+                // TODO 清除注册表中实例信息
                 leaseToCancel = gMap.remove(id);
             }
             recentCanceledQueue.add(new Pair<Long, String>(System.currentTimeMillis(), appName + "(" + id + ")"));
@@ -332,6 +336,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                     vip = instanceInfo.getVIPAddress();
                     svip = instanceInfo.getSecureVipAddress();
                 }
+                // TODO 注册表移除注册信息后，readWriteCacheMap 要清除缓存
                 invalidateCache(appName, vip, svip);
                 logger.info("Cancelled instance {}/{} (replication={})", appName, id, isReplication);
             }
@@ -390,6 +395,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 }
             }
             renewsLastMin.increment();
+            // TODO 续约
             leaseToRenew.renew();
             return true;
         }
@@ -511,6 +517,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                     info.setActionType(ActionType.MODIFIED);
                     recentlyChangedQueue.add(new RecentlyChangedItem(lease));
                     info.setLastUpdatedTimestamp();
+                    // TODO 失效缓存
                     invalidateCache(appName, info.getVIPAddress(), info.getSecureVipAddress());
                 }
                 return true;
@@ -594,6 +601,8 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     public void evict(long additionalLeaseMs) {
         logger.debug("Running the evict task");
 
+        // TODO 保护模式关闭 或者 保护模式开启 & 每分钟最小续约次数大于0 & 当前续约数大于每分钟最小续约次数
+        //  满足的情况下继续后续操作，否则直接返回
         if (!isLeaseExpirationEnabled()) {
             logger.debug("DS: lease expiration is currently disabled.");
             return;
@@ -602,6 +611,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         // We collect first all expired items, to evict them in random order. For large eviction sets,
         // if we do not that, we might wipe out whole apps before self preservation kicks in. By randomizing it,
         // the impact should be evenly distributed across all applications.
+        // TODO 遍历注册表中所有数据筛选出过期实例信息
         List<Lease<InstanceInfo>> expiredLeases = new ArrayList<>();
         for (Entry<String, Map<String, Lease<InstanceInfo>>> groupEntry : registry.entrySet()) {
             Map<String, Lease<InstanceInfo>> leaseMap = groupEntry.getValue();
@@ -616,11 +626,16 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         }
 
         // To compensate for GC pauses or drifting local time, we need to use current registry size as a base for
+        // TODO 为了补偿GC暂停或本地时间漂移，我们需要使用当前注册表大小作为
         // triggering self-preservation. Without that we would wipe out full registry.
+        // TODO 触发自我保护。如果没有这一点，我们将删除完整的注册表。
+        // TODO 注册表注册信息数
         int registrySize = (int) getLocalRegistrySize();
+        // TODO 触发开启保护机制的注册信息数
         int registrySizeThreshold = (int) (registrySize * serverConfig.getRenewalPercentThreshold());
+        // TODO 驱逐数
         int evictionLimit = registrySize - registrySizeThreshold;
-
+        // TODO 过期数与驱逐数，取最小值
         int toEvict = Math.min(expiredLeases.size(), evictionLimit);
         if (toEvict > 0) {
             logger.info("Evicting {} items (expired={}, evictionLimit={})", toEvict, expiredLeases.size(), evictionLimit);
@@ -636,6 +651,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 String id = lease.getHolder().getId();
                 EXPIRED.increment();
                 logger.warn("DS: Registry: expired lease for {}/{}", appName, id);
+                // TODO 从注册表移除过期的注册信息
                 internalCancel(appName, id, false);
             }
         }
@@ -799,6 +815,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 }
             }
         }
+        // TODO 用户client判断更新的增量获取的数据是否一致
         apps.setAppsHashCode(apps.getReconcileHashCode());
         return apps;
     }
@@ -1195,7 +1212,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 
     protected void updateRenewsPerMinThreshold() {
         this.numberOfRenewsPerMinThreshold = (int) (this.expectedNumberOfClientsSendingRenews
+                // TODO
                 * (60.0 / serverConfig.getExpectedClientRenewalIntervalSeconds())
+                // TODO 续约比例
                 * serverConfig.getRenewalPercentThreshold());
     }
 
@@ -1218,10 +1237,12 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     }
 
     protected void postInit() {
+        // TODO 定时任务，统计每分钟的续约次数
         renewsLastMin.start();
         if (evictionTaskRef.get() != null) {
             evictionTaskRef.get().cancel();
         }
+        // TODO 定时任务，移除过期的服务
         evictionTaskRef.set(new EvictionTask());
         evictionTimer.schedule(evictionTaskRef.get(),
                 serverConfig.getEvictionIntervalTimerInMs(),
@@ -1253,6 +1274,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             try {
                 long compensationTimeMs = getCompensationTimeMs();
                 logger.info("Running the evict task with compensationTime {}ms", compensationTimeMs);
+                // TODO 移除过期的服务
                 evict(compensationTimeMs);
             } catch (Throwable e) {
                 logger.error("Could not run the evict task", e);

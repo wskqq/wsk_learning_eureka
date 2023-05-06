@@ -131,6 +131,7 @@ public class ResponseCacheImpl implements ResponseCache {
         long responseCacheUpdateIntervalMs = serverConfig.getResponseCacheUpdateIntervalMs();
         this.readWriteCacheMap =
                 CacheBuilder.newBuilder().initialCapacity(serverConfig.getInitialCapacityOfResponseCache())
+                        // TODO readWriteCacheMap 响应缓存自动过期时间，默认180s
                         .expireAfterWrite(serverConfig.getResponseCacheAutoExpirationInSeconds(), TimeUnit.SECONDS)
                         .removalListener(new RemovalListener<Key, Value>() {
                             @Override
@@ -149,12 +150,14 @@ public class ResponseCacheImpl implements ResponseCache {
                                     Key cloneWithNoRegions = key.cloneWithoutRegions();
                                     regionSpecificKeys.put(cloneWithNoRegions, key);
                                 }
+                                // TODO 获取最新的注册表信息，赋值给 readWriteCacheMap
                                 Value value = generatePayload(key);
                                 return value;
                             }
                         });
 
         if (shouldUseReadOnlyResponseCache) {
+            // TODO 根据响应缓存更新频率， 将readWriteCacheMap最新缓存数据同步到 readOnlyCacheMap 中
             timer.schedule(getCacheUpdateTask(),
                     new Date(((System.currentTimeMillis() / responseCacheUpdateIntervalMs) * responseCacheUpdateIntervalMs)
                             + responseCacheUpdateIntervalMs),
@@ -173,6 +176,8 @@ public class ResponseCacheImpl implements ResponseCache {
             @Override
             public void run() {
                 logger.debug("Updating the client cache from response cache");
+                // TODO 遍历 readOnlyCacheMap 中缓存的注册信息，与readWriteCacheMap中数据是否一致，
+                //  不一致将readWriteCacheMap中最新的信息更新到readOnlyCacheMap中
                 for (Key key : readOnlyCacheMap.keySet()) {
                     if (logger.isDebugEnabled()) {
                         logger.debug("Updating the client cache from response cache for key : {} {} {} {}",
@@ -208,11 +213,13 @@ public class ResponseCacheImpl implements ResponseCache {
      * @return payload which contains information about the applications.
      */
     public String get(final Key key) {
+        // TODO 从缓存中获取注册信息
         return get(key, shouldUseReadOnlyResponseCache);
     }
 
     @VisibleForTesting
     String get(final Key key, boolean useReadOnlyCache) {
+        // TODO 从缓存中获取注册信息
         Value payload = getValue(key, useReadOnlyCache);
         if (payload == null || payload.getPayload().equals(EMPTY_PAYLOAD)) {
             return null;
@@ -281,7 +288,7 @@ public class ResponseCacheImpl implements ResponseCache {
             logger.debug("Invalidating the response cache key : {} {} {} {}, {}",
                     key.getEntityType(), key.getName(), key.getVersion(), key.getType(), key.getEurekaAccept());
 
-            // TODO 失效key对应的缓存
+            // TODO 失效readWriteCacheMap中key对应的缓存
             readWriteCacheMap.invalidate(key);
             Collection<Key> keysWithRegions = regionSpecificKeys.get(key);
             if (null != keysWithRegions && !keysWithRegions.isEmpty()) {
@@ -354,6 +361,9 @@ public class ResponseCacheImpl implements ResponseCache {
      */
     @VisibleForTesting
     Value getValue(final Key key, boolean useReadOnlyCache) {
+        // TODO 根据useReadOnlyCache判断是否使用只读缓存，
+        //  true-先从只读缓存读取数据，存在直接返回；不存在，从读写缓存中读取数据；
+        //  false-直接从读写缓存读取数据
         Value payload = null;
         try {
             if (useReadOnlyCache) {
@@ -361,6 +371,7 @@ public class ResponseCacheImpl implements ResponseCache {
                 if (currentPayload != null) {
                     payload = currentPayload;
                 } else {
+                    // TODO 从readWriteCacheMap中获取，没有则从数据源重新加载
                     payload = readWriteCacheMap.get(key);
                     readOnlyCacheMap.put(key, payload);
                 }

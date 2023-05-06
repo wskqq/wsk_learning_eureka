@@ -111,6 +111,7 @@ public class EurekaBootStrap implements ServletContextListener {
     public void contextInitialized(ServletContextEvent event) {
         try {
             initEurekaEnvironment();
+            // TODO 初始化eurekaServer上下文
             initEurekaServerContext();
 
             ServletContext sc = event.getServletContext();
@@ -208,6 +209,7 @@ public class EurekaBootStrap implements ServletContextListener {
 
         EurekaServerContextHolder.initialize(serverContext);
 
+        // TODO 初始化响应缓存数据
         serverContext.initialize();
         logger.info("Initialized server context");
 

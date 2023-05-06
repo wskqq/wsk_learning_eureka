@@ -19,6 +19,7 @@ public class EurekaContextListener extends GovernatorServletContextListener {
 
     @Override
     public void contextInitialized(ServletContextEvent servletContextEvent) {
+        // TODO 初始化上下文
         super.contextInitialized(servletContextEvent);
         ServletContext sc = servletContextEvent.getServletContext();
         sc.setAttribute(EurekaServerContext.class.getName(), serverContext);

@@ -244,6 +244,7 @@ public class EurekaClientServerRestIntegrationTest {
         server.start();
 
         eurekaServiceUrl = "http://localhost:8080/v2";
+
     }
 
     private static File findWar() {

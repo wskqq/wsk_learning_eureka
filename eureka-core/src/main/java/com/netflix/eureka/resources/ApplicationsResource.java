@@ -157,6 +157,7 @@ public class ApplicationsResource {
                     .header(HEADER_CONTENT_TYPE, returnMediaType)
                     .build();
         } else {
+            // TODO 从缓存中获取数据
             response = Response.ok(responseCache.get(cacheKey))
                     .build();
         }

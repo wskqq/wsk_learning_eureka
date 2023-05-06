@@ -113,6 +113,7 @@ public class ASGResource {
             logger.info("Trying to update ASG Status for ASG {} to {}", asgName, newStatus);
             ASGStatus asgStatus = ASGStatus.valueOf(newStatus.toUpperCase());
             awsAsgUtil.setStatus(asgName, (!ASGStatus.DISABLED.equals(asgStatus)));
+            // TODO
             registry.statusUpdate(asgName, asgStatus, Boolean.valueOf(isReplication));
             logger.debug("Updated ASG Status for ASG {} to {}", asgName, asgStatus);
 

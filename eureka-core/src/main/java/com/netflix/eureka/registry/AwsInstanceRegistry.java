@@ -54,6 +54,7 @@ public class AwsInstanceRegistry extends PeerAwareInstanceRegistryImpl {
 
     @Override
     public void init(PeerEurekaNodes peerEurekaNodes) throws Exception {
+        // TODO 初始化
         super.init(peerEurekaNodes);
         this.awsAsgUtil = new AwsAsgUtil(serverConfig, clientConfig, this);
         // We first check if the instance is STARTING or DOWN, then we check explicit overrides,

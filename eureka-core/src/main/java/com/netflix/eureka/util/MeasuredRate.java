@@ -48,6 +48,7 @@ public class MeasuredRate {
 
     public synchronized void start() {
         if (!isActive) {
+            // TODO 定时任务，统计每分钟的续约次数，每隔一段时间重置为0
             timer.schedule(new TimerTask() {
 
                 @Override
